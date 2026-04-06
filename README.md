@@ -7,7 +7,7 @@ Roblox Script Hub mit vielen Funktionen und einer grafischen Benutzeroberfläche
 Füge diese eine Zeile in einen **LocalScript** oder direkt in die **Exploit-Konsole** ein:
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ebubekirdemirci2013-netizen/my-hub/d2c7036b65751566deed143fc430c8daad7a9d56/MyHub.lua", true))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ebubekirdemirci2013-netizen/my-hub/refs/heads/copilot/load-string-from-url/MyHub.lua"))()
 ```
 
 > Das Script wird automatisch von GitHub geladen – du musst nichts manuell kopieren.  

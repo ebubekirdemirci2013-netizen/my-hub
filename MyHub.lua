@@ -48,7 +48,18 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name            = "MyHub"
 screenGui.ResetOnSpawn    = false
 screenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
-screenGui.Parent          = player.PlayerGui
+
+-- Exploit-Umgebungen blockieren oft PlayerGui; CoreGui ist zuverlässiger
+local guiParent
+if syn and syn.protect_gui then
+    syn.protect_gui(screenGui)
+    guiParent = game:GetService("CoreGui")
+elseif gethui then
+    guiParent = gethui()
+else
+    guiParent = player.PlayerGui
+end
+screenGui.Parent = guiParent
 
 -- Hauptfenster
 local mainFrame = Instance.new("Frame")
