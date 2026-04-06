@@ -464,7 +464,8 @@ local function startFly()
         local cam = workspace.CurrentCamera
 
         -- Horizontal direction: virtual joystick for touch devices (camera-relative),
-        -- MoveDirection for PC/keyboard/thumbstick (works even with PlatformStand).
+        -- MoveDirection for PC/keyboard – and also Roblox's built-in mobile thumbstick,
+        -- which writes to MoveDirection even when PlatformStand is active.
         local horizontal
         if UserInputService.TouchEnabled and flyDragDir.Magnitude > 0.05 then
             local camLook  = cam.CFrame.LookVector
