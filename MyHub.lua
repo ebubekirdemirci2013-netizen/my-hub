@@ -292,8 +292,11 @@ end
 local flyActive    = false
 local espActive    = false
 local noclipActive = false
+local rainbowOn    = false
 local espHighlights = {}
 local flyConn
+local flyBv, flyBg
+local noclipConn
 
 -- Bewegung
 makeSection("🏃 Bewegung")
@@ -305,24 +308,32 @@ end)
 
 makeToggle("High Jump  (JumpPower ×4)", function(on)
     humanoid.JumpPower = on and (SETTINGS.JumpPower * 4) or SETTINGS.JumpPower
+    pcall(function()
+        humanoid.JumpHeight = on and 50 or 7.2
+    end)
     notify("High Jump", on and "Aktiviert" or "Deaktiviert")
 end)
 
 makeToggle("Fliegen", function(on)
     flyActive = on
     notify("Fliegen", on and "Aktiviert" or "Deaktiviert")
-    if flyConn then flyConn:Disconnect() end
+    -- Heartbeat immer trennen
+    if flyConn then flyConn:Disconnect(); flyConn = nil end
+    -- Physik-Objekte immer zerstören (verhindert Stapeln bei erneutem Einschalten)
+    if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
+    if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
     if on then
         local bv = Instance.new("BodyVelocity")
         bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
         bv.Velocity = Vector3.new(0, 0, 0)
         bv.Parent   = rootPart
+        flyBv = bv
         local bg = Instance.new("BodyGyro")
         bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
         bg.P         = 1e4
         bg.Parent    = rootPart
+        flyBg = bg
         flyConn = RunService.Heartbeat:Connect(function()
-            if not flyActive then bv:Destroy(); bg:Destroy(); return end
             local cam = workspace.CurrentCamera
             local dir = Vector3.new(0, 0, 0)
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
@@ -340,13 +351,20 @@ end)
 makeToggle("NoClip", function(on)
     noclipActive = on
     notify("NoClip", on and "Aktiviert" or "Deaktiviert")
-    RunService.Stepped:Connect(function()
-        if noclipActive then
+    -- Alte Connection immer trennen
+    if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+    if on then
+        noclipConn = RunService.Stepped:Connect(function()
             for _, p in ipairs(character:GetDescendants()) do
                 if p:IsA("BasePart") then p.CanCollide = false end
             end
+        end)
+    else
+        -- Kollision wiederherstellen
+        for _, p in ipairs(character:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = true end
         end
-    end)
+    end
 end)
 
 -- Spieler
@@ -399,15 +417,18 @@ makeToggle("Vollmond (Lighting)", function(on)
 end)
 
 makeToggle("Regenbogen-Ambient", function(on)
-    task.spawn(function()
-        local h = 0
-        while on do
-            h = (h + 1) % 360
-            Lighting.Ambient = Color3.fromHSV(h / 360, 0.6, 1)
-            task.wait(0.05)
-        end
-        Lighting.Ambient = Color3.fromRGB(0, 0, 0)
-    end)
+    rainbowOn = on
+    if on then
+        task.spawn(function()
+            local h = 0
+            while rainbowOn do
+                h = (h + 1) % 360
+                Lighting.Ambient = Color3.fromHSV(h / 360, 0.6, 1)
+                task.wait(0.05)
+            end
+            Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+        end)
+    end
     notify("Ambient", on and "Regenbogen an" or "Aus")
 end)
 
