@@ -323,14 +323,17 @@ makeToggle("Fliegen", function(on)
     if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
     if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
     if on then
+        -- PlatformStand verhindert, dass der Humanoid gegen die BodyVelocity ankämpft
+        humanoid.PlatformStand = true
         local bv = Instance.new("BodyVelocity")
-        bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
         bv.Velocity = Vector3.new(0, 0, 0)
         bv.Parent   = rootPart
         flyBv = bv
         local bg = Instance.new("BodyGyro")
-        bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-        bg.P         = 1e4
+        bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        bg.P         = 1e9
+        bg.D         = 0
         bg.Parent    = rootPart
         flyBg = bg
         flyConn = RunService.Heartbeat:Connect(function()
@@ -345,6 +348,9 @@ makeToggle("Fliegen", function(on)
             bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
             bg.CFrame   = cam.CFrame
         end)
+    else
+        -- Normales Laufen wiederherstellen
+        humanoid.PlatformStand = false
     end
 end)
 
