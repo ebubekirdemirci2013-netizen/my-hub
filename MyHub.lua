@@ -45,17 +45,17 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 screenGui.DisplayOrder   = 999
 
 local ok = false
+-- gethui (Delta, Arceus X, Fluxus …)
+if not ok then
+    ok = pcall(function()
+        screenGui.Parent = gethui()
+    end)
+end
 -- Synapse X
 if not ok then
     ok = pcall(function()
         syn.protect_gui(screenGui)
         screenGui.Parent = game:GetService("CoreGui")
-    end)
-end
--- gethui (Delta, Arceus X, etc.)
-if not ok then
-    ok = pcall(function()
-        screenGui.Parent = gethui()
     end)
 end
 -- CoreGui direkt
@@ -114,7 +114,7 @@ closeBtn.Size             = UDim2.new(0, 30, 0, 30)
 closeBtn.Position         = UDim2.new(1, -36, 0.5, -15)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 closeBtn.Text             = "✕"
-closeBtn.TextColor3       = Color3.white
+closeBtn.TextColor3       = Color3.new(1, 1, 1)
 closeBtn.TextSize         = 14
 closeBtn.Font             = Enum.Font.GothamBold
 closeBtn.AutoButtonColor  = false
@@ -177,7 +177,7 @@ btnUp.Size             = UDim2.new(0, 28, 0, 28)
 btnUp.Position         = UDim2.new(1, -34, 0, 46)
 btnUp.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
 btnUp.Text             = "▲"
-btnUp.TextColor3       = Color3.white
+btnUp.TextColor3       = Color3.new(1, 1, 1)
 btnUp.TextSize         = 14
 btnUp.Font             = Enum.Font.GothamBold
 btnUp.AutoButtonColor  = false
@@ -194,7 +194,7 @@ btnDown.Size             = UDim2.new(0, 28, 0, 28)
 btnDown.Position         = UDim2.new(1, -34, 1, -34)
 btnDown.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
 btnDown.Text             = "▼"
-btnDown.TextColor3       = Color3.white
+btnDown.TextColor3       = Color3.new(1, 1, 1)
 btnDown.TextSize         = 14
 btnDown.Font             = Enum.Font.GothamBold
 btnDown.AutoButtonColor  = false
@@ -315,7 +315,7 @@ makeToggle("Fliegen", function(on)
     if on then
         local bv = Instance.new("BodyVelocity")
         bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-        bv.Velocity = Vector3.zero
+        bv.Velocity = Vector3.new(0, 0, 0)
         bv.Parent   = rootPart
         local bg = Instance.new("BodyGyro")
         bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
@@ -324,14 +324,14 @@ makeToggle("Fliegen", function(on)
         flyConn = RunService.Heartbeat:Connect(function()
             if not flyActive then bv:Destroy(); bg:Destroy(); return end
             local cam = workspace.CurrentCamera
-            local dir = Vector3.zero
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.yAxis end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.yAxis end
-            bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.zero
+            local dir = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
+            bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
             bg.CFrame   = cam.CFrame
         end)
     end
@@ -383,7 +383,7 @@ makeToggle("ESP – Spieler hervorheben", function(on)
             if p ~= player and p.Character then
                 local h = Instance.new("Highlight")
                 h.FillColor         = SETTINGS.ESPColor
-                h.OutlineColor      = Color3.white
+                h.OutlineColor      = Color3.new(1, 1, 1)
                 h.FillTransparency  = 0.5
                 h.Parent            = p.Character
                 table.insert(espHighlights, h)
