@@ -4,6 +4,6 @@
 -- ============================================================
 
 loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/ebubekirdemirci2013-netizen/my-hub/copilot/load-string-from-url/MyHub.lua",
+    "https://raw.githubusercontent.com/ebubekirdemirci2013-netizen/my-hub/d2c7036b65751566deed143fc430c8daad7a9d56/MyHub.lua",
     true
 ))()
