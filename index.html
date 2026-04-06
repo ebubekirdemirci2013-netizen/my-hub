@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Hub</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f0f1a;
+      color: #e0e0ff;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: 3rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #c084fc;
+      text-shadow: 0 0 20px #a855f7, 0 0 40px #7c3aed;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #818cf8;
+      letter-spacing: 2px;
+      margin-bottom: 50px;
+    }
+
+    /* ── Cool Kid SVG character ── */
+    .coolkid-wrapper {
+      position: relative;
+      width: 200px;
+      height: 320px;
+      margin: 0 auto 40px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-14px); }
+    }
+
+    /* shadow under feet */
+    .shadow {
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 14px;
+      background: radial-gradient(ellipse, rgba(168,85,247,0.4), transparent 70%);
+      border-radius: 50%;
+      animation: shadow-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes shadow-pulse {
+      0%, 100% { width: 80px; opacity: 0.7; }
+      50%       { width: 50px; opacity: 0.3; }
+    }
+
+    /* caption */
+    .coolkid-label {
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 3px;
+      color: #f0abfc;
+      text-shadow: 0 0 10px #e879f9;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    /* nav links */
+    .hub-links {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .hub-links a {
+      padding: 12px 28px;
+      border: 2px solid #7c3aed;
+      border-radius: 30px;
+      color: #c084fc;
+      text-decoration: none;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+    }
+
+    .hub-links a:hover {
+      background: #7c3aed;
+      color: #fff;
+      box-shadow: 0 0 16px #7c3aed;
+    }
+
+    footer {
+      margin-top: 60px;
+      font-size: 0.75rem;
+      color: #4b5563;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>My Hub</h1>
+  <p class="subtitle">welcome to the coolest place on the internet</p>
+
+  <div class="coolkid-wrapper">
+    <!-- Cool Kid SVG -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 320" width="200" height="320">
+      <defs>
+        <radialGradient id="skinGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fde68a"/>
+          <stop offset="100%" stop-color="#f59e0b"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Sneakers -->
+      <ellipse cx="68" cy="295" rx="22" ry="10" fill="#1e1b4b"/>
+      <ellipse cx="132" cy="295" rx="22" ry="10" fill="#1e1b4b"/>
+      <rect x="50" y="280" width="36" height="16" rx="8" fill="#312e81"/>
+      <rect x="114" y="280" width="36" height="16" rx="8" fill="#312e81"/>
+      <!-- sole stripe -->
+      <rect x="50" y="292" width="36" height="4" rx="2" fill="#6366f1"/>
+      <rect x="114" y="292" width="36" height="4" rx="2" fill="#6366f1"/>
+
+      <!-- Legs -->
+      <rect x="55" y="220" width="28" height="65" rx="10" fill="#1e40af"/>
+      <rect x="117" y="220" width="28" height="65" rx="10" fill="#1e40af"/>
+
+      <!-- Belt -->
+      <rect x="52" y="215" width="96" height="10" rx="4" fill="#111827"/>
+      <rect x="92" y="213" width="16" height="14" rx="3" fill="#f59e0b"/>
+
+      <!-- Hoodie body -->
+      <rect x="48" y="120" width="104" height="100" rx="20" fill="#7c3aed"/>
+      <!-- Hoodie pocket -->
+      <rect x="78" y="180" width="44" height="30" rx="8" fill="#6d28d9"/>
+
+      <!-- Arms -->
+      <!-- Left arm (raised slightly – cool pose) -->
+      <rect x="20" y="118" width="30" height="80" rx="14" fill="#7c3aed" transform="rotate(-15 35 158)"/>
+      <!-- Right arm (hand on hip) -->
+      <rect x="150" y="130" width="30" height="70" rx="14" fill="#7c3aed" transform="rotate(10 165 165)"/>
+
+      <!-- Hands -->
+      <ellipse cx="28" cy="190" rx="13" ry="13" fill="url(#skinGrad)"/>
+      <ellipse cx="172" cy="192" rx="13" ry="13" fill="url(#skinGrad)"/>
+
+      <!-- Neck -->
+      <rect x="88" y="108" width="24" height="20" rx="8" fill="url(#skinGrad)"/>
+
+      <!-- Head -->
+      <ellipse cx="100" cy="90" rx="48" ry="50" fill="url(#skinGrad)"/>
+
+      <!-- Cap brim -->
+      <ellipse cx="100" cy="48" rx="56" ry="10" fill="#111827"/>
+      <!-- Cap body -->
+      <ellipse cx="100" cy="52" rx="48" ry="30" fill="#111827"/>
+      <!-- Cap logo star -->
+      <text x="93" y="55" font-size="18" fill="#f59e0b" filter="url(#glow)">★</text>
+
+      <!-- Sunglasses frame -->
+      <rect x="62" y="82" width="34" height="20" rx="8" fill="#111827"/>
+      <rect x="104" y="82" width="34" height="20" rx="8" fill="#111827"/>
+      <line x1="96" y1="92" x2="104" y2="92" stroke="#111827" stroke-width="3"/>
+      <!-- Lens shine -->
+      <ellipse cx="72" cy="88" rx="5" ry="3" fill="#6366f1" opacity="0.8"/>
+      <ellipse cx="114" cy="88" rx="5" ry="3" fill="#6366f1" opacity="0.8"/>
+
+      <!-- Smile -->
+      <path d="M84 110 Q100 124 116 110" stroke="#92400e" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+      <!-- Earring -->
+      <circle cx="52" cy="95" r="4" fill="#f59e0b" filter="url(#glow)"/>
+
+      <!-- Chain necklace -->
+      <path d="M88 125 Q100 140 112 125" stroke="#f59e0b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <circle cx="100" cy="138" r="4" fill="#f59e0b" filter="url(#glow)"/>
+    </svg>
+    <div class="shadow"></div>
+  </div>
+
+  <p class="coolkid-label">✦ THE COOL KID ✦</p>
+
+  <nav class="hub-links">
+    <a href="#">Home</a>
+    <a href="#">Projekte</a>
+    <a href="#">Über mich</a>
+    <a href="#">Kontakt</a>
+  </nav>
+
+  <footer>© 2026 My Hub — stay cool 😎</footer>
+
+</body>
+</html>
