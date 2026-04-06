@@ -298,6 +298,9 @@ local rainbowOn    = false
 local espHighlights = {}
 local flyConn
 local flyBv, flyBg, flyAtt
+local flyUp        = false
+local flyDown      = false
+local flyMobileGui = nil
 local noclipConn
 local espPlayerConns = {}
 
@@ -305,6 +308,56 @@ local espPlayerConns = {}
 --  Helper-Funktionen (vor den Toggles definiert damit CharacterAdded
 --  und PlayerAdded sie aufrufen können)
 -- ============================================================
+local function destroyFlyMobileGui()
+    if flyMobileGui then
+        pcall(function() flyMobileGui:Destroy() end)
+        flyMobileGui = nil
+    end
+    flyUp   = false
+    flyDown = false
+end
+
+local function createFlyMobileGui()
+    destroyFlyMobileGui()
+    if not UserInputService.TouchEnabled then return end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name         = "MyHubFlyButtons"
+    gui.ResetOnSpawn = false
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    gui.DisplayOrder = 1000
+    local guiOk = false
+    if not guiOk then guiOk = pcall(function() gui.Parent = gethui() end) end
+    if not guiOk then guiOk = pcall(function() gui.Parent = game:GetService("CoreGui") end) end
+    if not guiOk then gui.Parent = player:WaitForChild("PlayerGui") end
+    flyMobileGui = gui
+
+    local function makeBtn(label, xPos, cb)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 80, 0, 80)
+        btn.Position = UDim2.new(xPos, -40, 1, -110)
+        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 60)
+        btn.BackgroundTransparency = 0.3
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.TextSize = 36
+        btn.Font = Enum.Font.GothamBold
+        btn.Text = label
+        btn.BorderSizePixel = 0
+        btn.ZIndex = 10
+        btn.Parent = gui
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 14)
+        btn.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.Touch then cb(true) end
+        end)
+        btn.InputEnded:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.Touch then cb(false) end
+        end)
+    end
+
+    makeBtn("▲", 0.30, function(down) flyUp   = down end)
+    makeBtn("▼", 0.70, function(down) flyDown = down end)
+end
+
 local function startFly()
     if flyConn then flyConn:Disconnect(); flyConn = nil end
     if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
@@ -331,30 +384,27 @@ local function startFly()
         if not rootPart or not rootPart.Parent then return end
         local cam = workspace.CurrentCamera
 
-        -- Horizontale Vektoren (Y-Anteil entfernen) → W/A/S/D bewegen immer horizontal
-        local lv = cam.CFrame.LookVector
-        local rv = cam.CFrame.RightVector
-        local forward = Vector3.new(lv.X, 0, lv.Z)
-        local right   = Vector3.new(rv.X, 0, rv.Z)
-        if forward.Magnitude > 0 then forward = forward.Unit end
-        if right.Magnitude   > 0 then right   = right.Unit   end
+        -- Horizontale Richtung: MoveDirection funktioniert für WASD (PC) und
+        -- Thumbstick (Mobile) gleichermaßen – auch wenn PlatformStand aktiv ist.
+        local md = humanoid.MoveDirection
+        local horizontal = Vector3.new(md.X, 0, md.Z)
 
-        local dir = Vector3.new(0, 0, 0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + forward end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - forward end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - right   end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + right   end
+        -- Vertikale Eingabe: Tastatur (PC) oder On-Screen-Buttons (Mobile)
+        local vertical = 0
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            dir = dir + Vector3.new(0, 1, 0)
+            vertical = 1
+        elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+            or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            vertical = -1
         end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
-        or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            dir = dir - Vector3.new(0, 1, 0)
-        end
+        if flyUp   then vertical =  1 end
+        if flyDown then vertical = -1 end
 
+        local dir = horizontal + Vector3.new(0, vertical, 0)
         bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
 
         -- Nur Yaw: Charakter schaut in Kamerarichtung (horizontal), kein Kippen
+        local lv = cam.CFrame.LookVector
         bg.CFrame = CFrame.new(rootPart.Position)
             * CFrame.Angles(0, math.atan2(-lv.X, -lv.Z), 0)
     end)
@@ -401,6 +451,7 @@ player.CharacterAdded:Connect(function(newChar)
         pcall(function() humanoid.JumpHeight = 50 end)
     end
     if flyActive then
+        createFlyMobileGui()
         startFly()
     end
     if noclipActive then
@@ -466,8 +517,10 @@ makeToggle("Fliegen", function(on)
     flyActive = on
     notify("Fliegen", on and "Aktiviert" or "Deaktiviert")
     if on then
+        createFlyMobileGui()
         startFly()
     else
+        destroyFlyMobileGui()
         if flyConn then flyConn:Disconnect(); flyConn = nil end
         if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
         if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
