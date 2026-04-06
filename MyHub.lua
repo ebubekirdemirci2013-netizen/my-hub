@@ -309,6 +309,7 @@ local espPlayerConns = {}
 -- ============================================================
 local FLY_TOUCH_DEADZONE = 18   -- Pixel: minimale Bewegung vor Aktivierung
 local FLY_TOUCH_MAX_DRAG = 160  -- Pixel: vollständige Geschwindigkeit
+local FLY_MIN_DIR_MAG    = 0.001 -- unter diesem Wert gilt Richtung als Null
 
 local flyTouchConns   = {}
 local flyTouchId      = nil     -- verfolgt genau einen Finger
@@ -390,9 +391,9 @@ local function startFly()
 
                 local camCF  = cam.CFrame
                 -- Kamera-Rechts flach (kein Kippen beim Seitwärts-Fliegen)
-                local rVec   = camCF.RightVector
-                local flatR  = Vector3.new(rVec.X, 0, rVec.Z)
-                if flatR.Magnitude > 0.01 then flatR = flatR.Unit end
+                local rVec  = camCF.RightVector
+                local flatR = Vector3.new(rVec.X, 0, rVec.Z)
+                flatR = flatR.Magnitude > 0.01 and flatR.Unit or Vector3.new(0, 0, 0)
                 -- Kamera-Vorwärts inklusive Pitch → nach oben schauen + nach oben ziehen
                 local fwdDir = camCF.LookVector
 
@@ -415,7 +416,7 @@ local function startFly()
         end
 
         -- Sanfte Geschwindigkeitsüberleitung (lerp) für flüssige Animation
-        local targetVel = dir.Magnitude > 0.001
+        local targetVel = dir.Magnitude > FLY_MIN_DIR_MAG
             and dir.Unit * SETTINGS.FlySpeed
             or  Vector3.new(0, 0, 0)
         bv.Velocity = bv.Velocity:Lerp(targetVel, 0.25)
