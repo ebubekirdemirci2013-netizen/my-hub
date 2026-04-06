@@ -332,7 +332,9 @@ local function startFly()
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
         bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
-        bg.CFrame   = cam.CFrame
+        -- Nur Yaw (horizontale Drehung) übernehmen – kein Pitch/Roll → kein Kreisel
+        local look = cam.CFrame.LookVector
+        bg.CFrame = CFrame.new(rootPart.Position) * CFrame.Angles(0, math.atan2(-look.X, -look.Z), 0)
     end)
 end
 
