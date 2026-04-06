@@ -1,40 +1,34 @@
 -- ============================================================
---  MyHub  |  Roblox Script Hub
---  Einfacher, sauberer Hub mit mehreren Funktionen.
---  Einfügen in einen LocalScript unter StarterPlayerScripts.
+--  MyHub  |  Roblox Script Hub  (Mobile-kompatibel)
 -- ============================================================
 
-local Players        = game:GetService("Players")
-local RunService     = game:GetService("RunService")
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService   = game:GetService("TweenService")
-local Lighting       = game:GetService("Lighting")
+local TweenService     = game:GetService("TweenService")
+local Lighting         = game:GetService("Lighting")
 
-local player         = Players.LocalPlayer
-local character      = player.Character or player.CharacterAdded:Wait()
-local humanoid       = character:WaitForChild("Humanoid")
-local rootPart       = character:WaitForChild("HumanoidRootPart")
+local player    = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid  = character:WaitForChild("Humanoid")
+local rootPart  = character:WaitForChild("HumanoidRootPart")
 
--- ============================================================
---  Einstellungen
--- ============================================================
 local SETTINGS = {
-    WalkSpeed     = 16,
-    JumpPower     = 50,
-    FlySpeed      = 50,
-    ESPColor      = Color3.fromRGB(255, 50, 50),
+    WalkSpeed = 16,
+    JumpPower = 50,
+    FlySpeed  = 50,
+    ESPColor  = Color3.fromRGB(255, 50, 50),
 }
 
 -- ============================================================
 --  Hilfsfunktionen
 -- ============================================================
 local function notify(title, text, duration)
-    duration = duration or 3
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title    = title,
-        Text     = text,
-        Duration = duration,
-    })
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title, Text = text, Duration = duration or 3,
+        })
+    end)
 end
 
 local function tween(obj, props, t)
@@ -42,284 +36,303 @@ local function tween(obj, props, t)
 end
 
 -- ============================================================
---  GUI aufbauen
+--  GUI Parent – pcall-sicher für alle Executors
 -- ============================================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name            = "MyHub"
-screenGui.ResetOnSpawn    = false
-screenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Global
-screenGui.DisplayOrder    = 100
+screenGui.Name           = "MyHub"
+screenGui.ResetOnSpawn   = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+screenGui.DisplayOrder   = 999
 
--- Exploit-Umgebungen blockieren oft PlayerGui; CoreGui ist zuverlässiger
-local guiParent
-if syn and syn.protect_gui then
-    syn.protect_gui(screenGui)
-    guiParent = game:GetService("CoreGui")
-elseif gethui then
-    guiParent = gethui()
-else
-    guiParent = player.PlayerGui
+local ok = false
+-- Synapse X
+if not ok then
+    ok = pcall(function()
+        syn.protect_gui(screenGui)
+        screenGui.Parent = game:GetService("CoreGui")
+    end)
 end
-screenGui.Parent = guiParent
+-- gethui (Delta, Arceus X, etc.)
+if not ok then
+    ok = pcall(function()
+        screenGui.Parent = gethui()
+    end)
+end
+-- CoreGui direkt
+if not ok then
+    ok = pcall(function()
+        screenGui.Parent = game:GetService("CoreGui")
+    end)
+end
+-- Fallback PlayerGui
+if not ok then
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+end
 
--- Hauptfenster
+-- ============================================================
+--  Hauptfenster
+-- ============================================================
+local WIN_W = 360
+local WIN_H = 460
+
 local mainFrame = Instance.new("Frame")
-mainFrame.Name            = "MainFrame"
-mainFrame.Size            = UDim2.new(0, 380, 0, 460)
-mainFrame.Position        = UDim2.new(0.5, -190, 0.5, -230)
+mainFrame.Name             = "MainFrame"
+mainFrame.Size             = UDim2.new(0, WIN_W, 0, WIN_H)
+mainFrame.Position         = UDim2.new(0.5, -WIN_W/2, 0.5, -WIN_H/2)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-mainFrame.BorderSizePixel = 0
-mainFrame.Active          = true
-mainFrame.Draggable       = true
-mainFrame.Parent          = screenGui
-
+mainFrame.BorderSizePixel  = 0
+mainFrame.Active           = true
+mainFrame.Draggable        = true
+mainFrame.ZIndex           = 1
+mainFrame.Parent           = screenGui
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
 
 -- Titelleiste
 local titleBar = Instance.new("Frame")
-titleBar.Size              = UDim2.new(1, 0, 0, 40)
-titleBar.BackgroundColor3  = Color3.fromRGB(30, 30, 50)
-titleBar.BorderSizePixel   = 0
-titleBar.Parent            = mainFrame
+titleBar.Size             = UDim2.new(1, 0, 0, 40)
+titleBar.Position         = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+titleBar.BorderSizePixel  = 0
+titleBar.ZIndex           = 2
+titleBar.Parent           = mainFrame
 Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 10)
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size            = UDim2.new(1, -50, 1, 0)
-titleLabel.Position        = UDim2.new(0, 10, 0, 0)
+titleLabel.Size                 = UDim2.new(1, -50, 1, 0)
+titleLabel.Position             = UDim2.new(0, 12, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text            = "⚡ MyHub"
-titleLabel.TextColor3      = Color3.fromRGB(200, 180, 255)
-titleLabel.TextSize        = 18
-titleLabel.Font            = Enum.Font.GothamBold
-titleLabel.TextXAlignment  = Enum.TextXAlignment.Left
-titleLabel.Parent          = titleBar
+titleLabel.Text                 = "⚡ MyHub"
+titleLabel.TextColor3           = Color3.fromRGB(200, 180, 255)
+titleLabel.TextSize             = 18
+titleLabel.Font                 = Enum.Font.GothamBold
+titleLabel.TextXAlignment       = Enum.TextXAlignment.Left
+titleLabel.ZIndex               = 3
+titleLabel.Parent               = titleBar
 
--- Schließen-Button
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size              = UDim2.new(0, 30, 0, 30)
-closeBtn.Position          = UDim2.new(1, -35, 0.5, -15)
-closeBtn.BackgroundColor3  = Color3.fromRGB(200, 50, 50)
-closeBtn.Text              = "✕"
-closeBtn.TextColor3        = Color3.white
-closeBtn.TextSize          = 14
-closeBtn.Font              = Enum.Font.GothamBold
-closeBtn.Parent            = titleBar
+closeBtn.Size             = UDim2.new(0, 30, 0, 30)
+closeBtn.Position         = UDim2.new(1, -36, 0.5, -15)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text             = "✕"
+closeBtn.TextColor3       = Color3.white
+closeBtn.TextSize         = 14
+closeBtn.Font             = Enum.Font.GothamBold
+closeBtn.AutoButtonColor  = false
+closeBtn.ZIndex           = 3
+closeBtn.Parent           = titleBar
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-
 closeBtn.MouseButton1Click:Connect(function()
-    tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3)
-    task.delay(0.35, function() screenGui:Destroy() end)
+    screenGui:Destroy()
 end)
 
--- Scroll-Viewport (sichtbarer Ausschnitt)
-local scrollViewport = Instance.new("Frame")
-scrollViewport.Name                  = "ScrollViewport"
-scrollViewport.Size                  = UDim2.new(1, -20, 1, -60)
-scrollViewport.Position              = UDim2.new(0, 10, 0, 50)
-scrollViewport.BackgroundTransparency = 1
-scrollViewport.ClipsDescendants      = true
-scrollViewport.BorderSizePixel       = 0
-scrollViewport.ZIndex                = 2
-scrollViewport.Parent                = mainFrame
+-- ============================================================
+--  Scroll-System (kein ScrollingFrame, kein AutomaticSize)
+-- ============================================================
+-- Viewport – zeigt den sichtbaren Ausschnitt
+local VIEWPORT_X  = 10
+local VIEWPORT_Y  = 46
+local VIEWPORT_W  = WIN_W - 20
+local VIEWPORT_H  = WIN_H - 56
 
--- Beweglicher Inhalt
-local scrollContent = Instance.new("Frame")
-scrollContent.Name                   = "ScrollContent"
-scrollContent.Size                   = UDim2.new(1, -8, 0, 10)
-scrollContent.Position               = UDim2.new(0, 0, 0, 4)
-scrollContent.BackgroundTransparency = 1
-scrollContent.BorderSizePixel        = 0
-scrollContent.AutomaticSize          = Enum.AutomaticSize.Y
-scrollContent.ZIndex                 = 2
-scrollContent.Parent                 = scrollViewport
+local viewport = Instance.new("Frame")
+viewport.Name                  = "Viewport"
+viewport.Size                  = UDim2.new(0, VIEWPORT_W, 0, VIEWPORT_H)
+viewport.Position              = UDim2.new(0, VIEWPORT_X, 0, VIEWPORT_Y)
+viewport.BackgroundTransparency = 1
+viewport.ClipsDescendants      = true
+viewport.BorderSizePixel       = 0
+viewport.ZIndex                = 2
+viewport.Parent                = mainFrame
 
-local layout = Instance.new("UIListLayout")
-layout.Padding  = UDim.new(0, 8)
-layout.Parent   = scrollContent
+-- Innerer Rahmen mit allen Buttons – feste große Höhe
+-- Jeder Eintrag: Section=22px, Toggle/Button=38px, Padding=8px
+-- 4 Sections + 10 Toggles + 6 Buttons + 19 Lücken = 88+380+228+152 = 848px → 900px reicht sicher
+local CONTENT_H = 900
+local contentFrame = Instance.new("Frame")
+contentFrame.Name                   = "Content"
+contentFrame.Size                   = UDim2.new(0, VIEWPORT_W - 8, 0, CONTENT_H)
+contentFrame.Position               = UDim2.new(0, 0, 0, 4)
+contentFrame.BackgroundTransparency = 1
+contentFrame.BorderSizePixel        = 0
+contentFrame.ZIndex                 = 2
+contentFrame.Parent                 = viewport
 
--- Scroll-Buttons (▲ / ▼)
-local scrollOffset = 0
-local SCROLL_STEP  = 90
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding         = UDim.new(0, 8)
+listLayout.SortOrder       = Enum.SortOrder.LayoutOrder
+listLayout.Parent          = contentFrame
 
-local function doScroll(delta)
-    scrollOffset = scrollOffset + delta
-    local contentH = scrollContent.AbsoluteSize.Y
-    local viewH    = scrollViewport.AbsoluteSize.Y
-    local maxOff   = math.max(0, contentH - viewH)
-    scrollOffset   = math.clamp(scrollOffset, 0, maxOff)
-    scrollContent.Position = UDim2.new(0, 0, 0, 4 - scrollOffset)
+-- Scroll-Offset und Scroll-Buttons
+local scrollY    = 0
+local STEP       = 100
+
+local function applyScroll()
+    local maxScroll = math.max(0, CONTENT_H - VIEWPORT_H)
+    scrollY = math.clamp(scrollY, 0, maxScroll)
+    contentFrame.Position = UDim2.new(0, 0, 0, 4 - scrollY)
 end
 
-local arrowUp = Instance.new("TextButton")
-arrowUp.Size             = UDim2.new(0, 26, 0, 26)
-arrowUp.Position         = UDim2.new(1, -32, 0, 50)
-arrowUp.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
-arrowUp.Text             = "▲"
-arrowUp.TextColor3       = Color3.white
-arrowUp.TextSize         = 13
-arrowUp.Font             = Enum.Font.GothamBold
-arrowUp.ZIndex           = 5
-arrowUp.Parent           = mainFrame
-Instance.new("UICorner", arrowUp).CornerRadius = UDim.new(0, 4)
-arrowUp.MouseButton1Click:Connect(function() doScroll(-SCROLL_STEP) end)
+local btnUp = Instance.new("TextButton")
+btnUp.Size             = UDim2.new(0, 28, 0, 28)
+btnUp.Position         = UDim2.new(1, -34, 0, 46)
+btnUp.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
+btnUp.Text             = "▲"
+btnUp.TextColor3       = Color3.white
+btnUp.TextSize         = 14
+btnUp.Font             = Enum.Font.GothamBold
+btnUp.AutoButtonColor  = false
+btnUp.ZIndex           = 5
+btnUp.Parent           = mainFrame
+Instance.new("UICorner", btnUp).CornerRadius = UDim.new(0, 4)
+btnUp.MouseButton1Click:Connect(function()
+    scrollY = scrollY - STEP
+    applyScroll()
+end)
 
-local arrowDown = Instance.new("TextButton")
-arrowDown.Size             = UDim2.new(0, 26, 0, 26)
-arrowDown.Position         = UDim2.new(1, -32, 1, -32)
-arrowDown.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
-arrowDown.Text             = "▼"
-arrowDown.TextColor3       = Color3.white
-arrowDown.TextSize         = 13
-arrowDown.Font             = Enum.Font.GothamBold
-arrowDown.ZIndex           = 5
-arrowDown.Parent           = mainFrame
-Instance.new("UICorner", arrowDown).CornerRadius = UDim.new(0, 4)
-arrowDown.MouseButton1Click:Connect(function() doScroll(SCROLL_STEP) end)
+local btnDown = Instance.new("TextButton")
+btnDown.Size             = UDim2.new(0, 28, 0, 28)
+btnDown.Position         = UDim2.new(1, -34, 1, -34)
+btnDown.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
+btnDown.Text             = "▼"
+btnDown.TextColor3       = Color3.white
+btnDown.TextSize         = 14
+btnDown.Font             = Enum.Font.GothamBold
+btnDown.AutoButtonColor  = false
+btnDown.ZIndex           = 5
+btnDown.Parent           = mainFrame
+Instance.new("UICorner", btnDown).CornerRadius = UDim.new(0, 4)
+btnDown.MouseButton1Click:Connect(function()
+    scrollY = scrollY + STEP
+    applyScroll()
+end)
 
 -- ============================================================
 --  Button-Fabrik
 -- ============================================================
-local function makeSection(labelText)
-    local lbl = Instance.new("TextLabel")
-    lbl.Size               = UDim2.new(1, 0, 0, 22)
-    lbl.BackgroundTransparency = 1
-    lbl.Text               = "  " .. labelText
-    lbl.TextColor3         = Color3.fromRGB(160, 140, 220)
-    lbl.TextSize           = 13
-    lbl.Font               = Enum.Font.GothamBold
-    lbl.TextXAlignment     = Enum.TextXAlignment.Left
-    lbl.ZIndex             = 3
-    lbl.Parent             = scrollContent
+local itemOrder = 0
+local function nextOrder()
+    itemOrder = itemOrder + 1
+    return itemOrder
 end
 
-local function makeToggle(labelText, callback)
+local function makeSection(label)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size                  = UDim2.new(1, 0, 0, 22)
+    lbl.BackgroundTransparency = 1
+    lbl.Text                  = "  " .. label
+    lbl.TextColor3            = Color3.fromRGB(160, 140, 220)
+    lbl.TextSize              = 13
+    lbl.Font                  = Enum.Font.GothamBold
+    lbl.TextXAlignment        = Enum.TextXAlignment.Left
+    lbl.ZIndex                = 3
+    lbl.LayoutOrder           = nextOrder()
+    lbl.Parent                = contentFrame
+end
+
+local function makeToggle(label, callback)
     local active = false
-
     local btn = Instance.new("TextButton")
-    btn.Size               = UDim2.new(1, 0, 0, 38)
-    btn.BackgroundColor3   = Color3.fromRGB(30, 30, 50)
-    btn.Text               = "[ OFF ]  " .. labelText
-    btn.TextColor3         = Color3.fromRGB(180, 180, 180)
-    btn.TextSize           = 14
-    btn.Font               = Enum.Font.Gotham
-    btn.TextXAlignment     = Enum.TextXAlignment.Left
-    btn.AutoButtonColor    = false
-    btn.ZIndex             = 3
-    btn.Parent             = scrollContent
-
-    local pad = Instance.new("UIPadding")
-    pad.PaddingLeft        = UDim.new(0, 10)
-    pad.Parent             = btn
-
+    btn.Size             = UDim2.new(1, 0, 0, 38)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    btn.Text             = "[ OFF ]  " .. label
+    btn.TextColor3       = Color3.fromRGB(180, 180, 180)
+    btn.TextSize         = 14
+    btn.Font             = Enum.Font.Gotham
+    btn.TextXAlignment   = Enum.TextXAlignment.Left
+    btn.AutoButtonColor  = false
+    btn.ZIndex           = 3
+    btn.LayoutOrder      = nextOrder()
+    btn.Parent           = contentFrame
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    local pad = Instance.new("UIPadding")
+    pad.PaddingLeft = UDim.new(0, 10)
+    pad.Parent = btn
 
     btn.MouseButton1Click:Connect(function()
         active = not active
         if active then
-            btn.Text            = "[ ON  ]  " .. labelText
-            btn.TextColor3      = Color3.fromRGB(120, 255, 120)
+            btn.Text             = "[ ON  ]  " .. label
+            btn.TextColor3       = Color3.fromRGB(120, 255, 120)
             btn.BackgroundColor3 = Color3.fromRGB(20, 45, 20)
         else
-            btn.Text            = "[ OFF ]  " .. labelText
-            btn.TextColor3      = Color3.fromRGB(180, 180, 180)
+            btn.Text             = "[ OFF ]  " .. label
+            btn.TextColor3       = Color3.fromRGB(180, 180, 180)
             btn.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
         end
         callback(active)
     end)
-
     return btn
 end
 
-local function makeButton(labelText, callback)
+local function makeButton(label, callback)
     local btn = Instance.new("TextButton")
-    btn.Size               = UDim2.new(1, 0, 0, 38)
-    btn.BackgroundColor3   = Color3.fromRGB(40, 40, 65)
-    btn.Text               = labelText
-    btn.TextColor3         = Color3.fromRGB(210, 210, 255)
-    btn.TextSize           = 14
-    btn.Font               = Enum.Font.Gotham
-    btn.AutoButtonColor    = false
-    btn.ZIndex             = 3
-    btn.Parent             = scrollContent
-
-    local pad = Instance.new("UIPadding")
-    pad.PaddingLeft        = UDim.new(0, 10)
-    pad.Parent             = btn
-
+    btn.Size             = UDim2.new(1, 0, 0, 38)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 65)
+    btn.Text             = label
+    btn.TextColor3       = Color3.fromRGB(210, 210, 255)
+    btn.TextSize         = 14
+    btn.Font             = Enum.Font.Gotham
+    btn.TextXAlignment   = Enum.TextXAlignment.Left
+    btn.AutoButtonColor  = false
+    btn.ZIndex           = 3
+    btn.LayoutOrder      = nextOrder()
+    btn.Parent           = contentFrame
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    local pad = Instance.new("UIPadding")
+    pad.PaddingLeft = UDim.new(0, 10)
+    pad.Parent = btn
 
-    btn.MouseEnter:Connect(function()
-        tween(btn, {BackgroundColor3 = Color3.fromRGB(60, 60, 100)})
-    end)
-    btn.MouseLeave:Connect(function()
-        tween(btn, {BackgroundColor3 = Color3.fromRGB(40, 40, 65)})
-    end)
     btn.MouseButton1Click:Connect(callback)
-
     return btn
 end
 
 -- ============================================================
---  Feature-Logik
+--  Features
 -- ============================================================
-
--- Variablen
 local flyActive    = false
 local espActive    = false
 local noclipActive = false
 local espHighlights = {}
 local flyConn
 
--- >> Bewegung
+-- Bewegung
 makeSection("🏃 Bewegung")
 
 makeToggle("Speed Hack  (WalkSpeed ×3)", function(on)
-    if character and humanoid then
-        humanoid.WalkSpeed = on and (SETTINGS.WalkSpeed * 3) or SETTINGS.WalkSpeed
-    end
+    humanoid.WalkSpeed = on and (SETTINGS.WalkSpeed * 3) or SETTINGS.WalkSpeed
     notify("Speed Hack", on and "Aktiviert" or "Deaktiviert")
 end)
 
 makeToggle("High Jump  (JumpPower ×4)", function(on)
-    if character and humanoid then
-        humanoid.JumpPower = on and (SETTINGS.JumpPower * 4) or SETTINGS.JumpPower
-    end
+    humanoid.JumpPower = on and (SETTINGS.JumpPower * 4) or SETTINGS.JumpPower
     notify("High Jump", on and "Aktiviert" or "Deaktiviert")
 end)
 
 makeToggle("Fliegen", function(on)
     flyActive = on
     notify("Fliegen", on and "Aktiviert" or "Deaktiviert")
-
     if flyConn then flyConn:Disconnect() end
-
     if on then
         local bv = Instance.new("BodyVelocity")
-        bv.MaxForce  = Vector3.new(1e5, 1e5, 1e5)
-        bv.Velocity  = Vector3.zero
-        bv.Parent    = rootPart
-
+        bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+        bv.Velocity = Vector3.zero
+        bv.Parent   = rootPart
         local bg = Instance.new("BodyGyro")
         bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
         bg.P         = 1e4
         bg.Parent    = rootPart
-
         flyConn = RunService.Heartbeat:Connect(function()
-            if not flyActive then
-                bv:Destroy()
-                bg:Destroy()
-                return
-            end
-            local cam    = workspace.CurrentCamera
-            local dir    = Vector3.zero
+            if not flyActive then bv:Destroy(); bg:Destroy(); return end
+            local cam = workspace.CurrentCamera
+            local dir = Vector3.zero
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.yAxis end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.yAxis end
-            bv.Velocity  = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.zero
-            bg.CFrame    = cam.CFrame
+            bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.zero
+            bg.CFrame   = cam.CFrame
         end)
     end
 end)
@@ -328,31 +341,25 @@ makeToggle("NoClip", function(on)
     noclipActive = on
     notify("NoClip", on and "Aktiviert" or "Deaktiviert")
     RunService.Stepped:Connect(function()
-        if noclipActive and character then
-            for _, part in ipairs(character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
+        if noclipActive then
+            for _, p in ipairs(character:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
             end
         end
     end)
 end)
 
--- >> Spieler
+-- Spieler
 makeSection("👤 Spieler")
 
 makeButton("⚡ Gesundheit auffüllen", function()
-    if humanoid then
-        humanoid.Health = humanoid.MaxHealth
-        notify("Heilung", "HP vollständig aufgefüllt")
-    end
+    humanoid.Health = humanoid.MaxHealth
+    notify("Heilung", "HP vollständig aufgefüllt")
 end)
 
 makeButton("🌀 Teleport zur Spawn", function()
-    if rootPart then
-        rootPart.CFrame = CFrame.new(0, 10, 0)
-        notify("Teleport", "Zur Spawn teleportiert")
-    end
+    rootPart.CFrame = CFrame.new(0, 10, 0)
+    notify("Teleport", "Zur Spawn teleportiert")
 end)
 
 makeButton("🔍 Spieler-Liste drucken", function()
@@ -360,28 +367,25 @@ makeButton("🔍 Spieler-Liste drucken", function()
     for _, p in ipairs(Players:GetPlayers()) do
         print("  •", p.Name, "| Ping:", p:GetNetworkPing() * 1000 .. "ms")
     end
-    notify("Spieler-Liste", "In der Konsole (F9) ausgegeben")
+    notify("Spieler-Liste", "Konsole (F9) prüfen")
 end)
 
--- >> Visuals
+-- Visuals
 makeSection("👁 Visuals")
 
 makeToggle("ESP – Spieler hervorheben", function(on)
     espActive = on
     notify("ESP", on and "Aktiviert" or "Deaktiviert")
-
-    -- Alte Highlights entfernen
-    for _, h in ipairs(espHighlights) do h:Destroy() end
+    for _, h in ipairs(espHighlights) do pcall(function() h:Destroy() end) end
     espHighlights = {}
-
     if on then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= player and p.Character then
                 local h = Instance.new("Highlight")
-                h.FillColor    = SETTINGS.ESPColor
-                h.OutlineColor = Color3.white
+                h.FillColor         = SETTINGS.ESPColor
+                h.OutlineColor      = Color3.white
                 h.FillTransparency  = 0.5
-                h.Parent       = p.Character
+                h.Parent            = p.Character
                 table.insert(espHighlights, h)
             end
         end
@@ -391,7 +395,7 @@ end)
 makeToggle("Vollmond (Lighting)", function(on)
     Lighting.ClockTime  = on and 0 or 14
     Lighting.Brightness = on and 2 or 1
-    notify("Lighting", on and "Vollmond aktiviert" or "Normal")
+    notify("Lighting", on and "Vollmond" or "Normal")
 end)
 
 makeToggle("Regenbogen-Ambient", function(on)
@@ -407,21 +411,19 @@ makeToggle("Regenbogen-Ambient", function(on)
     notify("Ambient", on and "Regenbogen an" or "Aus")
 end)
 
--- >> Welt
+-- Welt
 makeSection("🌍 Welt")
 
-makeButton("💥 Alle Baseplate-Parts entfernen", function()
+makeButton("💥 Baseplate entfernen", function()
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name == "Baseplate" then
-            obj:Destroy()
-        end
+        if obj:IsA("BasePart") and obj.Name == "Baseplate" then obj:Destroy() end
     end
     notify("Welt", "Baseplate entfernt")
 end)
 
 makeButton("🌊 Schwerkraft halbieren", function()
     workspace.Gravity = 98.1 / 2
-    notify("Gravitation", "Auf 50 % gesetzt")
+    notify("Gravitation", "50 %")
 end)
 
 makeButton("🔁 Schwerkraft zurücksetzen", function()
@@ -430,7 +432,7 @@ makeButton("🔁 Schwerkraft zurücksetzen", function()
 end)
 
 -- ============================================================
---  Open/Close Hotkey (RightAlt)
+--  Hotkey RightAlt: Hub ein-/ausblenden
 -- ============================================================
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
@@ -439,5 +441,5 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
-notify("MyHub", "Geladen! Drücke RAlt um den Hub ein-/auszublenden.", 5)
+notify("MyHub", "Geladen! RAlt = Hub umschalten", 5)
 print("[MyHub] Script geladen ✓")
