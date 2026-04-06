@@ -309,32 +309,54 @@ local function startFly()
     if flyConn then flyConn:Disconnect(); flyConn = nil end
     if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
     if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
-    -- PlatformStand verhindert, dass der Humanoid gegen die BodyVelocity ankämpft
+
     humanoid.PlatformStand = true
+
     local bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
     bv.Velocity = Vector3.new(0, 0, 0)
     bv.Parent   = rootPart
     flyBv = bv
+
+    -- MaxTorque nur auf Y-Achse → kein Pitch/Roll-Kämpfen, kein Drehen
     local bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-    bg.P         = 1e9
-    bg.D         = 0
+    bg.MaxTorque = Vector3.new(0, 1e9, 0)
+    bg.P         = 1e6
+    bg.D         = 100
+    bg.CFrame    = rootPart.CFrame
     bg.Parent    = rootPart
     flyBg = bg
+
     flyConn = RunService.Heartbeat:Connect(function()
+        if not rootPart or not rootPart.Parent then return end
         local cam = workspace.CurrentCamera
+
+        -- Horizontale Vektoren (Y-Anteil entfernen) → W/A/S/D bewegen immer horizontal
+        local lv = cam.CFrame.LookVector
+        local rv = cam.CFrame.RightVector
+        local forward = Vector3.new(lv.X, 0, lv.Z)
+        local right   = Vector3.new(rv.X, 0, rv.Z)
+        if forward.Magnitude > 0 then forward = forward.Unit end
+        if right.Magnitude   > 0 then right   = right.Unit   end
+
         local dir = Vector3.new(0, 0, 0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + forward end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - forward end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - right   end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + right   end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            dir = dir + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+        or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            dir = dir - Vector3.new(0, 1, 0)
+        end
+
         bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
-        -- Nur Yaw (horizontale Drehung) übernehmen – kein Pitch/Roll → kein Kreisel
-        local look = cam.CFrame.LookVector
-        bg.CFrame = CFrame.new(rootPart.Position) * CFrame.Angles(0, math.atan2(-look.X, -look.Z), 0)
+
+        -- Nur Yaw: Charakter schaut in Kamerarichtung (horizontal), kein Kippen
+        bg.CFrame = CFrame.new(rootPart.Position)
+            * CFrame.Angles(0, math.atan2(-lv.X, -lv.Z), 0)
     end)
 end
 
