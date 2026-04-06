@@ -346,12 +346,8 @@ local function createFlyMobileGui()
         btn.ZIndex = 10
         btn.Parent = gui
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 14)
-        btn.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.Touch then cb(true) end
-        end)
-        btn.InputEnded:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.Touch then cb(false) end
-        end)
+        btn.MouseButton1Down:Connect(function() cb(true) end)
+        btn.MouseButton1Up:Connect(function()   cb(false) end)
     end
 
     makeBtn("▲", 0.30, function(down) flyUp   = down end)
