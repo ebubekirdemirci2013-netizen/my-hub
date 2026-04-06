@@ -2,9 +2,22 @@
 
 Roblox Script Hub mit vielen Funktionen und einer grafischen Benutzeroberfläche (GUI).
 
+## 🚀 Loadstring (empfohlen)
+
+Füge diese eine Zeile in einen **LocalScript** oder direkt in die **Exploit-Konsole** ein:
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ebubekirdemirci2013-netizen/my-hub/main/MyHub.lua", true))()
+```
+
+> Das Script wird automatisch von GitHub geladen – du musst nichts manuell kopieren.  
+> Die vollständige Loader-Datei findest du in [`loader.lua`](loader.lua).
+
+---
+
 ## MyHub.lua – Roblox Hub
 
-**Einfügen:** LocalScript → `StarterPlayerScripts`
+**Manuell einfügen:** LocalScript → `StarterPlayerScripts`
 
 ### Funktionen
 
