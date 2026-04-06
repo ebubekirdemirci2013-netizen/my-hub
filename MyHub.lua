@@ -297,7 +297,7 @@ local espActive    = false
 local rainbowOn    = false
 local espHighlights = {}
 local flyConn
-local flyBv, flyBg
+local flyBv, flyBg, flyAtt
 local noclipConn
 local espPlayerConns = {}
 
