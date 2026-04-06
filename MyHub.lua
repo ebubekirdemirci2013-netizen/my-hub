@@ -47,7 +47,8 @@ end
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name            = "MyHub"
 screenGui.ResetOnSpawn    = false
-screenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+screenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Global
+screenGui.DisplayOrder    = 100
 
 -- Exploit-Umgebungen blockieren oft PlayerGui; CoreGui ist zuverlässiger
 local guiParent
@@ -118,13 +119,19 @@ scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel    = 0
 scroll.ScrollBarThickness = 4
 scroll.ScrollBarImageColor3 = Color3.fromRGB(120, 100, 200)
-scroll.CanvasSize         = UDim2.new(0, 0, 0, 0)
+scroll.CanvasSize         = UDim2.new(0, 0, 2, 0)
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.ZIndex             = 2
 scroll.Parent             = mainFrame
 
 local layout = Instance.new("UIListLayout")
 layout.Padding            = UDim.new(0, 8)
 layout.Parent             = scroll
+
+local scrollPad = Instance.new("UIPadding")
+scrollPad.PaddingTop      = UDim.new(0, 4)
+scrollPad.PaddingBottom   = UDim.new(0, 8)
+scrollPad.Parent          = scroll
 
 -- ============================================================
 --  Button-Fabrik
@@ -138,6 +145,7 @@ local function makeSection(labelText)
     lbl.TextSize           = 13
     lbl.Font               = Enum.Font.GothamBold
     lbl.TextXAlignment     = Enum.TextXAlignment.Left
+    lbl.ZIndex             = 3
     lbl.Parent             = scroll
 end
 
@@ -153,6 +161,7 @@ local function makeToggle(labelText, callback)
     btn.Font               = Enum.Font.Gotham
     btn.TextXAlignment     = Enum.TextXAlignment.Left
     btn.AutoButtonColor    = false
+    btn.ZIndex             = 3
     btn.Parent             = scroll
 
     local pad = Instance.new("UIPadding")
@@ -187,6 +196,7 @@ local function makeButton(labelText, callback)
     btn.TextSize           = 14
     btn.Font               = Enum.Font.Gotham
     btn.AutoButtonColor    = false
+    btn.ZIndex             = 3
     btn.Parent             = scroll
 
     local pad = Instance.new("UIPadding")
