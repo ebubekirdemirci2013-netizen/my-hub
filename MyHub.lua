@@ -111,27 +111,70 @@ closeBtn.MouseButton1Click:Connect(function()
     task.delay(0.35, function() screenGui:Destroy() end)
 end)
 
--- Scroll-Container für Buttons
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size               = UDim2.new(1, -20, 1, -55)
-scroll.Position           = UDim2.new(0, 10, 0, 50)
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel    = 0
-scroll.ScrollBarThickness = 4
-scroll.ScrollBarImageColor3 = Color3.fromRGB(120, 100, 200)
-scroll.CanvasSize         = UDim2.new(0, 0, 2, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.ZIndex             = 2
-scroll.Parent             = mainFrame
+-- Scroll-Viewport (sichtbarer Ausschnitt)
+local scrollViewport = Instance.new("Frame")
+scrollViewport.Name                  = "ScrollViewport"
+scrollViewport.Size                  = UDim2.new(1, -20, 1, -60)
+scrollViewport.Position              = UDim2.new(0, 10, 0, 50)
+scrollViewport.BackgroundTransparency = 1
+scrollViewport.ClipsDescendants      = true
+scrollViewport.BorderSizePixel       = 0
+scrollViewport.ZIndex                = 2
+scrollViewport.Parent                = mainFrame
+
+-- Beweglicher Inhalt
+local scrollContent = Instance.new("Frame")
+scrollContent.Name                   = "ScrollContent"
+scrollContent.Size                   = UDim2.new(1, -8, 0, 10)
+scrollContent.Position               = UDim2.new(0, 0, 0, 4)
+scrollContent.BackgroundTransparency = 1
+scrollContent.BorderSizePixel        = 0
+scrollContent.AutomaticSize          = Enum.AutomaticSize.Y
+scrollContent.ZIndex                 = 2
+scrollContent.Parent                 = scrollViewport
 
 local layout = Instance.new("UIListLayout")
-layout.Padding            = UDim.new(0, 8)
-layout.Parent             = scroll
+layout.Padding  = UDim.new(0, 8)
+layout.Parent   = scrollContent
 
-local scrollPad = Instance.new("UIPadding")
-scrollPad.PaddingTop      = UDim.new(0, 4)
-scrollPad.PaddingBottom   = UDim.new(0, 8)
-scrollPad.Parent          = scroll
+-- Scroll-Buttons (▲ / ▼)
+local scrollOffset = 0
+local SCROLL_STEP  = 90
+
+local function doScroll(delta)
+    scrollOffset = scrollOffset + delta
+    local contentH = scrollContent.AbsoluteSize.Y
+    local viewH    = scrollViewport.AbsoluteSize.Y
+    local maxOff   = math.max(0, contentH - viewH)
+    scrollOffset   = math.clamp(scrollOffset, 0, maxOff)
+    scrollContent.Position = UDim2.new(0, 0, 0, 4 - scrollOffset)
+end
+
+local arrowUp = Instance.new("TextButton")
+arrowUp.Size             = UDim2.new(0, 26, 0, 26)
+arrowUp.Position         = UDim2.new(1, -32, 0, 50)
+arrowUp.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+arrowUp.Text             = "▲"
+arrowUp.TextColor3       = Color3.white
+arrowUp.TextSize         = 13
+arrowUp.Font             = Enum.Font.GothamBold
+arrowUp.ZIndex           = 5
+arrowUp.Parent           = mainFrame
+Instance.new("UICorner", arrowUp).CornerRadius = UDim.new(0, 4)
+arrowUp.MouseButton1Click:Connect(function() doScroll(-SCROLL_STEP) end)
+
+local arrowDown = Instance.new("TextButton")
+arrowDown.Size             = UDim2.new(0, 26, 0, 26)
+arrowDown.Position         = UDim2.new(1, -32, 1, -32)
+arrowDown.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+arrowDown.Text             = "▼"
+arrowDown.TextColor3       = Color3.white
+arrowDown.TextSize         = 13
+arrowDown.Font             = Enum.Font.GothamBold
+arrowDown.ZIndex           = 5
+arrowDown.Parent           = mainFrame
+Instance.new("UICorner", arrowDown).CornerRadius = UDim.new(0, 4)
+arrowDown.MouseButton1Click:Connect(function() doScroll(SCROLL_STEP) end)
 
 -- ============================================================
 --  Button-Fabrik
@@ -146,7 +189,7 @@ local function makeSection(labelText)
     lbl.Font               = Enum.Font.GothamBold
     lbl.TextXAlignment     = Enum.TextXAlignment.Left
     lbl.ZIndex             = 3
-    lbl.Parent             = scroll
+    lbl.Parent             = scrollContent
 end
 
 local function makeToggle(labelText, callback)
@@ -162,7 +205,7 @@ local function makeToggle(labelText, callback)
     btn.TextXAlignment     = Enum.TextXAlignment.Left
     btn.AutoButtonColor    = false
     btn.ZIndex             = 3
-    btn.Parent             = scroll
+    btn.Parent             = scrollContent
 
     local pad = Instance.new("UIPadding")
     pad.PaddingLeft        = UDim.new(0, 10)
@@ -197,7 +240,7 @@ local function makeButton(labelText, callback)
     btn.Font               = Enum.Font.Gotham
     btn.AutoButtonColor    = false
     btn.ZIndex             = 3
-    btn.Parent             = scroll
+    btn.Parent             = scrollContent
 
     local pad = Instance.new("UIPadding")
     pad.PaddingLeft        = UDim.new(0, 10)
