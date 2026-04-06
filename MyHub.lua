@@ -287,26 +287,150 @@ local function makeButton(label, callback)
 end
 
 -- ============================================================
---  Features
+--  Features – State-Variablen
 -- ============================================================
+local speedActive  = false
+local jumpActive   = false
 local flyActive    = false
-local espActive    = false
 local noclipActive = false
+local espActive    = false
 local rainbowOn    = false
 local espHighlights = {}
 local flyConn
 local flyBv, flyBg
 local noclipConn
+local espPlayerConns = {}
 
+-- ============================================================
+--  Helper-Funktionen (vor den Toggles definiert damit CharacterAdded
+--  und PlayerAdded sie aufrufen können)
+-- ============================================================
+local function startFly()
+    if flyConn then flyConn:Disconnect(); flyConn = nil end
+    if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
+    if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
+    -- PlatformStand verhindert, dass der Humanoid gegen die BodyVelocity ankämpft
+    humanoid.PlatformStand = true
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.Parent   = rootPart
+    flyBv = bv
+    local bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+    bg.P         = 1e9
+    bg.D         = 0
+    bg.Parent    = rootPart
+    flyBg = bg
+    flyConn = RunService.Heartbeat:Connect(function()
+        local cam = workspace.CurrentCamera
+        local dir = Vector3.new(0, 0, 0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
+        bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
+        bg.CFrame   = cam.CFrame
+    end)
+end
+
+local function startNoClip()
+    if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
+    noclipConn = RunService.Stepped:Connect(function()
+        for _, p in ipairs(character:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+    end)
+end
+
+local function applyESP()
+    for _, h in ipairs(espHighlights) do pcall(function() h:Destroy() end) end
+    espHighlights = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local h = Instance.new("Highlight")
+            h.FillColor        = SETTINGS.ESPColor
+            h.OutlineColor     = Color3.new(1, 1, 1)
+            h.FillTransparency = 0.5
+            h.Parent           = p.Character
+            table.insert(espHighlights, h)
+        end
+    end
+end
+
+-- ============================================================
+--  CharacterAdded: character/humanoid/rootPart aktualisieren
+--  und alle aktiven Features auf den neuen Character anwenden
+-- ============================================================
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid  = newChar:WaitForChild("Humanoid")
+    rootPart  = newChar:WaitForChild("HumanoidRootPart")
+
+    if speedActive then
+        humanoid.WalkSpeed = SETTINGS.WalkSpeed * 3
+    end
+    if jumpActive then
+        humanoid.JumpPower = SETTINGS.JumpPower * 4
+        pcall(function() humanoid.JumpHeight = 50 end)
+    end
+    if flyActive then
+        startFly()
+    end
+    if noclipActive then
+        startNoClip()
+    end
+end)
+
+-- ============================================================
+--  ESP: neue Spieler und Respawns automatisch markieren
+-- ============================================================
+local function watchPlayer(p)
+    if espPlayerConns[p] then return end
+    espPlayerConns[p] = p.CharacterAdded:Connect(function()
+        if espActive then
+            task.wait(0.5)
+            applyESP()
+        end
+    end)
+end
+
+Players.PlayerAdded:Connect(function(p)
+    watchPlayer(p)
+    if espActive then
+        task.wait(1)
+        applyESP()
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if espPlayerConns[p] then
+        espPlayerConns[p]:Disconnect()
+        espPlayerConns[p] = nil
+    end
+    if espActive then applyESP() end
+end)
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= player then watchPlayer(p) end
+end
+
+-- ============================================================
+--  UI-Einträge
+-- ============================================================
 -- Bewegung
 makeSection("🏃 Bewegung")
 
 makeToggle("Speed Hack  (WalkSpeed ×3)", function(on)
+    speedActive = on
     humanoid.WalkSpeed = on and (SETTINGS.WalkSpeed * 3) or SETTINGS.WalkSpeed
     notify("Speed Hack", on and "Aktiviert" or "Deaktiviert")
 end)
 
 makeToggle("High Jump  (JumpPower ×4)", function(on)
+    jumpActive = on
     humanoid.JumpPower = on and (SETTINGS.JumpPower * 4) or SETTINGS.JumpPower
     pcall(function()
         humanoid.JumpHeight = on and 50 or 7.2
@@ -317,39 +441,12 @@ end)
 makeToggle("Fliegen", function(on)
     flyActive = on
     notify("Fliegen", on and "Aktiviert" or "Deaktiviert")
-    -- Heartbeat immer trennen
-    if flyConn then flyConn:Disconnect(); flyConn = nil end
-    -- Physik-Objekte immer zerstören (verhindert Stapeln bei erneutem Einschalten)
-    if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
-    if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
     if on then
-        -- PlatformStand verhindert, dass der Humanoid gegen die BodyVelocity ankämpft
-        humanoid.PlatformStand = true
-        local bv = Instance.new("BodyVelocity")
-        bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        bv.Velocity = Vector3.new(0, 0, 0)
-        bv.Parent   = rootPart
-        flyBv = bv
-        local bg = Instance.new("BodyGyro")
-        bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-        bg.P         = 1e9
-        bg.D         = 0
-        bg.Parent    = rootPart
-        flyBg = bg
-        flyConn = RunService.Heartbeat:Connect(function()
-            local cam = workspace.CurrentCamera
-            local dir = Vector3.new(0, 0, 0)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
-            bv.Velocity = dir.Magnitude > 0 and dir.Unit * SETTINGS.FlySpeed or Vector3.new(0, 0, 0)
-            bg.CFrame   = cam.CFrame
-        end)
+        startFly()
     else
-        -- Normales Laufen wiederherstellen
+        if flyConn then flyConn:Disconnect(); flyConn = nil end
+        if flyBv then pcall(function() flyBv:Destroy() end); flyBv = nil end
+        if flyBg then pcall(function() flyBg:Destroy() end); flyBg = nil end
         humanoid.PlatformStand = false
     end
 end)
@@ -357,16 +454,10 @@ end)
 makeToggle("NoClip", function(on)
     noclipActive = on
     notify("NoClip", on and "Aktiviert" or "Deaktiviert")
-    -- Alte Connection immer trennen
-    if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
     if on then
-        noclipConn = RunService.Stepped:Connect(function()
-            for _, p in ipairs(character:GetDescendants()) do
-                if p:IsA("BasePart") then p.CanCollide = false end
-            end
-        end)
+        startNoClip()
     else
-        -- Kollision wiederherstellen
+        if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
         for _, p in ipairs(character:GetDescendants()) do
             if p:IsA("BasePart") then p.CanCollide = true end
         end
@@ -389,7 +480,9 @@ end)
 makeButton("🔍 Spieler-Liste drucken", function()
     print("=== Spieler online ===")
     for _, p in ipairs(Players:GetPlayers()) do
-        print("  •", p.Name, "| Ping:", p:GetNetworkPing() * 1000 .. "ms")
+        local ping = "?"
+        pcall(function() ping = math.floor(p:GetNetworkPing() * 1000) .. "ms" end)
+        print("  •", p.Name, "| Ping:", ping)
     end
     notify("Spieler-Liste", "Konsole (F9) prüfen")
 end)
@@ -400,19 +493,11 @@ makeSection("👁 Visuals")
 makeToggle("ESP – Spieler hervorheben", function(on)
     espActive = on
     notify("ESP", on and "Aktiviert" or "Deaktiviert")
-    for _, h in ipairs(espHighlights) do pcall(function() h:Destroy() end) end
-    espHighlights = {}
     if on then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                local h = Instance.new("Highlight")
-                h.FillColor         = SETTINGS.ESPColor
-                h.OutlineColor      = Color3.new(1, 1, 1)
-                h.FillTransparency  = 0.5
-                h.Parent            = p.Character
-                table.insert(espHighlights, h)
-            end
-        end
+        applyESP()
+    else
+        for _, h in ipairs(espHighlights) do pcall(function() h:Destroy() end) end
+        espHighlights = {}
     end
 end)
 
